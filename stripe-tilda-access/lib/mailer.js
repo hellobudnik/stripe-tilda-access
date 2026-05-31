@@ -1,0 +1,47 @@
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 465),
+  secure: Number(process.env.SMTP_PORT || 465) === 465, // 465 = SSL, 587 = STARTTLS
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+export async function sendAccessEmail({ to, accessUrl, ttlHours }) {
+  const support = process.env.SUPPORT_EMAIL || "";
+
+  const text =
+    `Оплата успешно получена. Спасибо!\n\n` +
+    `Чтобы открыть доступ, перейдите по ссылке:\n${accessUrl}\n\n` +
+    `Ссылка действительна ${ttlHours} часов и может быть использована один раз.\n` +
+    `Зарегистрируйтесь на тот же email, который указали при оплате.\n\n` +
+    (support ? `Если ссылка не работает или истекла — напишите нам: ${support}\n` : "");
+
+  const html = `
+  <div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#222;max-width:520px;margin:0 auto">
+    <p>Оплата успешно получена. Спасибо!</p>
+    <p>Чтобы открыть доступ, нажмите кнопку:</p>
+    <p style="text-align:center;margin:28px 0">
+      <a href="${accessUrl}"
+         style="background:#111;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;display:inline-block">
+        Получить доступ
+      </a>
+    </p>
+    <p style="font-size:14px;color:#666">
+      Ссылка действительна <b>${ttlHours} часов</b> и используется один раз.
+      Регистрируйтесь на тот же email, который указали при оплате.
+    </p>
+    ${support ? `<p style="font-size:14px;color:#666">Проблемы с доступом? Напишите: <a href="mailto:${support}">${support}</a></p>` : ""}
+  </div>`;
+
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
+    to,
+    subject: "Ваш доступ к материалам",
+    text,
+    html,
+  });
+}

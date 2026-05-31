@@ -1,0 +1,15 @@
+{
+  "name": "stripe-tilda-access",
+  "version": "1.0.0",
+  "description": "Stripe (EUR) -> одноразовая ссылка 48ч -> редирект на регистрацию в группу Tilda Members Area",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check api/stripe-webhook.js && node --check api/access/[token].js && node --check lib/store.js && node --check lib/mailer.js"
+  },
+  "dependencies": {
+    "stripe": "^17.5.0",
+    "@upstash/redis": "^1.34.3",
+    "nodemailer": "^6.9.16"
+  }
+}
