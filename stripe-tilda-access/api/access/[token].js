@@ -1,4 +1,4 @@
-import { consumeToken } from "../../lib/store.js";
+import { resolveToken } from "../../lib/store.js";
 
 const SUPPORT = process.env.SUPPORT_EMAIL || "";
 
@@ -26,24 +26,19 @@ export default async function handler(req, res) {
 
   let result;
   try {
-    result = await consumeToken(token);
+    result = await resolveToken(token);
   } catch (err) {
-    console.error("consumeToken error:", err);
+    console.error("resolveToken error:", err);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(500).send(page("Временная ошибка", "Попробуйте обновить страницу через минуту."));
   }
 
   if (!result.ok) {
-    const msg =
-      result.reason === "already_used"
-        ? "Эта ссылка уже была использована. Доступ можно открыть только один раз."
-        : "Срок действия ссылки истёк или она недействительна.";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.status(410).send(page("Ссылка больше не активна", msg));
+    return res.status(410).send(page("Ссылка больше не активна", "Срок действия ссылки истёк (48 часов). Напишите нам, и мы вышлем новую."));
   }
 
-  // Успех: редирект на регистрацию в нужной группе Tilda.
-  console.log(`Token consumed for ${result.data.email} -> ${result.data.signupUrl}`);
+  console.log(`Token resolved for ${result.data.email} -> ${result.data.signupUrl}`);
   res.writeHead(302, { Location: result.data.signupUrl });
   return res.end();
 }
