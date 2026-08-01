@@ -7,6 +7,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const config = { api: { bodyParser: false } };
 
+// Консультации захардкожены — меняются редко, не нужна env-переменная
+const CONSULT_MAP = {
+  "price_1TzXNAADS8Id8zfJTFQVaiqI": "https://calendly.com/hellobudnik/60session", // 1 час
+  "price_1TzXQzADS8Id8zfJXIz4SWz0": "https://calendly.com/hellobudnik/60session", // 4 часа
+  "price_1TzXSSADS8Id8zfJxeV1EIwR": "https://calendly.com/hellobudnik/60session", // 10 часов
+};
+
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -50,7 +57,6 @@ export default async function handler(req, res) {
     }
 
     const productMap = JSON.parse(process.env.PRODUCT_MAP || "{}");
-    const consultMap = JSON.parse(process.env.CONSULT_MAP || "{}");
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
 
     const email =
@@ -59,11 +65,11 @@ export default async function handler(req, res) {
 
     for (const item of lineItems.data) {
       const priceId = item.price && item.price.id;
-      if (priceId && consultMap[priceId]) {
+      if (priceId && CONSULT_MAP[priceId]) {
         const first = await markSessionOnce(session.id);
         if (!first) return res.status(200).json({ skipped: "already_processed" });
         if (!email) return res.status(200).json({ skipped: "no_email" });
-        await sendConsultationEmail({ to: email, bookingUrl: consultMap[priceId] });
+        await sendConsultationEmail({ to: email, bookingUrl: CONSULT_MAP[priceId] });
         console.log(`Consultation email sent to ${email} (price ${priceId}, session ${session.id})`);
         return res.status(200).json({ ok: true, type: "consultation" });
       }
